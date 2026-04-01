@@ -1,13 +1,778 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>PatternForge</title>
-  <link rel="stylesheet" href="/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>PatternForge — генератор бесшовных текстур</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            background: #0a1a24;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            color: #eef2ff;
+        }
+
+        /* Верхняя панель */
+        .top-bar {
+            background: rgba(15, 35, 50, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(100, 150, 180, 0.3);
+            padding: 8px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            z-index: 30;
+            justify-content: space-between;
+        }
+
+        .pattern-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pattern-btn {
+            background: #1e2f3a;
+            border: 1px solid #2e4a60;
+            border-radius: 40px;
+            padding: 6px 18px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            color: #cbdbe6;
+            font-weight: 500;
+        }
+
+        .pattern-btn.active {
+            background: #3f7e9c;
+            color: white;
+            border-color: #5aa9cc;
+            box-shadow: 0 0 6px rgba(79, 170, 210, 0.4);
+        }
+
+        .action-btn {
+            background: #2a4858;
+            border: 1px solid #4f7e98;
+            border-radius: 40px;
+            padding: 6px 18px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #f0f6fa;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #3e6a80;
+            border-color: #7dafca;
+        }
+
+        /* Основная область: 2D слева (широкий), справа стек 3D + настройки */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            gap: 1px;
+            background: #07161f;
+            overflow: hidden;
+        }
+
+        .preview-2d-area {
+            flex: 2.5;
+            position: relative;
+            background: #0e1e28;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .preview-3d-area {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            background: #0f202a;
+            border-left: 1px solid #1f3e4c;
+            min-width: 260px;
+        }
+
+        .preview-header {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #2a4d5e;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
+        /* Панель настроек (прокрутка) */
+        .settings-panel {
+            background: rgba(20, 40, 52, 0.85);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #2a5068;
+            padding: 14px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            overflow-y: auto;
+            max-height: 45%;
+        }
+
+        .setting-group {
+            background: #10262ecc;
+            border-radius: 18px;
+            padding: 10px 12px;
+            border: 1px solid #2a5568;
+        }
+
+        .setting-group h3 {
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            color: #9ac2db;
+            border-left: 3px solid #5fa7c7;
+            padding-left: 8px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+
+        .control-row label {
+            font-size: 0.7rem;
+            width: 85px;
+            color: #cbdbe6;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: #2a4a60;
+            border-radius: 4px;
+        }
+
+        .value-display {
+            width: 40px;
+            text-align: right;
+            font-size: 0.7rem;
+            color: #bbd4f0;
+        }
+
+        .color-sliders {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .color-slider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-slider label {
+            width: 40px;
+            font-size: 0.7rem;
+        }
+
+        .color-preview {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            border: 1px solid #88aacc;
+        }
+
+        .secondary-color {
+            margin-top: 8px;
+            border-top: 1px solid #2a5a70;
+            padding-top: 8px;
+        }
+
+        select, input[type="color"], button {
+            background: #1e3846;
+            border: 1px solid #3b6c84;
+            border-radius: 20px;
+            padding: 5px 10px;
+            color: #eef2ff;
+            font-size: 0.75rem;
+        }
+
+        .geometry-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .geometry-buttons button {
+            flex: 1;
+            font-size: 0.7rem;
+            background: #1f3e4c;
+        }
+
+        /* Футер с выпадающими диаграммами (dropdowns) */
+        .footer-tools {
+            background: #07161fd9;
+            backdrop-filter: blur(12px);
+            border-top: 1px solid #2a5568;
+            padding: 12px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            z-index: 20;
+        }
+
+        .export-toolbar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .dropdown-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #102e3a60;
+            padding: 4px 12px;
+            border-radius: 40px;
+        }
+
+        .dropdown-group label {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        select {
+            background: #1f3e4e;
+            padding: 5px 10px;
+            border-radius: 24px;
+            cursor: pointer;
+        }
+
+        .footer-btn {
+            background: #3f7c60;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 32px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .footer-btn.blend {
+            background: #3d6a8c;
+        }
+
+        .status-msg {
+            font-size: 0.7rem;
+            color: #8bbdd5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+    </style>
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
-  <div id="app"></div>
-  <script type="module" src="/src/main.js"></script>
+
+<div class="top-bar">
+    <div class="pattern-buttons" id="patternButtons"></div>
+    <div>
+        <button id="savePresetBtn" class="action-btn">Сохранить пресет</button>
+        <button id="loadPresetBtn" class="action-btn">Загрузить JSON</button>
+    </div>
+</div>
+
+<div class="main-layout">
+    <!-- 2D Preview - главная, почти весь экран по ширине -->
+    <div class="preview-2d-area">
+        <div class="preview-header">2D бесшовная текстура | масштаб + тайлинг</div>
+        <div id="canvas2d" class="canvas-container"></div>
+    </div>
+
+    <!-- Правая часть: 3D превью + панель параметров -->
+    <div class="preview-3d-area">
+        <div class="preview-header">3D предпросмотр (Orbit)</div>
+        <div id="canvas3d" class="canvas-container"></div>
+        <div class="settings-panel" id="settingsPanel">
+            <div class="setting-group">
+                <h3>Генерация (бесшовная)</h3>
+                <div class="control-row"><label>Масштаб деталей</label><input type="range" id="scale" min="0.5" max="8.0" step="0.01" value="2.5"><span id="scaleVal" class="value-display">2.50</span></div>
+                <div class="control-row"><label>Анимация</label><input type="range" id="speed" min="0" max="1.8" step="0.01" value="0.7"><span id="speedVal" class="value-display">0.70</span></div>
+                <div class="control-row"><label>Октавы</label><input type="range" id="octaves" min="1" max="6" step="1" value="3"><span id="octavesVal">3</span></div>
+                <div class="control-row"><label>Персистенс</label><input type="range" id="persistence" min="0.2" max="0.9" step="0.01" value="0.5"><span id="persistenceVal">0.50</span></div>
+                <div class="control-row"><label>Лакунарность</label><input type="range" id="lacunarity" min="1.2" max="3.0" step="0.05" value="2.0"><span id="lacunarityVal">2.00</span></div>
+            </div>
+            <div class="setting-group">
+                <h3>Цвета PBR</h3>
+                <div class="color-sliders">
+                    <div class="color-slider"><label>Hue1</label><input type="range" id="hue1" min="0" max="360" step="1" value="30"><span id="hue1Val">30°</span></div>
+                    <div class="color-slider"><label>Sat1</label><input type="range" id="sat1" min="0" max="1" step="0.01" value="0.8"><span id="sat1Val">0.80</span></div>
+                    <div class="color-slider"><label>Light1</label><input type="range" id="light1" min="0" max="1" step="0.01" value="0.6"><span id="light1Val">0.60</span></div>
+                    <div class="color-preview" id="colorPreview1" style="background: #d48c4a;"></div>
+                </div>
+                <div class="secondary-color">
+                    <div class="color-slider"><label>Hue2</label><input type="range" id="hue2" min="0" max="360" step="1" value="210"><span id="hue2Val">210°</span></div>
+                    <div class="color-slider"><label>Sat2</label><input type="range" id="sat2" min="0" max="1" step="0.01" value="0.7"><span id="sat2Val">0.70</span></div>
+                    <div class="color-slider"><label>Light2</label><input type="range" id="light2" min="0" max="1" step="0.01" value="0.5"><span id="light2Val">0.50</span></div>
+                    <div class="color-preview" id="colorPreview2" style="background: #3a6ea5;"></div>
+                </div>
+                <div class="control-row"><label>Насыщенность</label><input type="range" id="saturation" min="0" max="1" step="0.01" value="1"><span id="saturationVal">1.00</span></div>
+                <div class="control-row"><label>Смешивание</label><select id="blendMode"><option value="0">Линейное</option><option value="1">Мультипликат.</option></select></div>
+            </div>
+            <div class="setting-group">
+                <h3>Трансформы (бесшовные)</h3>
+                <div class="control-row"><label>Поворот</label><input type="range" id="rotate" min="0" max="360" step="1" value="0"><span id="rotateVal">0°</span></div>
+                <div class="control-row"><label>Сдвиг X</label><input type="range" id="offsetX" min="-1" max="1" step="0.01" value="0"><span id="offsetXVal">0.00</span></div>
+                <div class="control-row"><label>Сдвиг Y</label><input type="range" id="offsetY" min="-1" max="1" step="0.01" value="0"><span id="offsetYVal">0.00</span></div>
+                <div class="control-row"><label>Зеркало</label><select id="mirror"><option value="0">Нет</option><option value="1">По X</option><option value="2">По Y</option><option value="3">X+Y</option></select></div>
+                <div class="control-row"><label>Бесшовный тайлинг</label><select id="tileToggle"><option value="1">Вкл</option><option value="0">Выкл</option></select></div>
+            </div>
+            <div class="setting-group">
+                <h3>3D модель</h3>
+                <div class="geometry-buttons">
+                    <button data-geo="torus">Тор-узел</button>
+                    <button data-geo="sphere">Сфера</button>
+                    <button data-geo="cube">Куб</button>
+                    <button data-geo="cylinder">Цилиндр</button>
+                </div>
+                <label class="file-input-label" style="display:block; background:#1f3e4c; text-align:center; border-radius:28px; padding:5px;">Загрузить glTF/GLB<input type="file" id="modelFileInput" accept=".gltf,.glb" style="display: none;"></label>
+                <div class="status-msg" id="modelStatus"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Футер с выпадающими диаграммами (dropdown) и экспортом для Blender -->
+<div class="footer-tools">
+    <div class="export-toolbar">
+        <div class="dropdown-group">
+            <label>Разрешение</label>
+            <select id="exportResolution"><option value="1024">1K</option><option value="2048" selected>2K</option><option value="4096">4K</option></select>
+        </div>
+        <div class="dropdown-group">
+            <label>Формат</label>
+            <select id="exportFormat"><option value="png">PNG</option><option value="jpg">JPEG</option></select>
+        </div>
+        <div class="dropdown-group">
+            <label>Тип экспорта</label>
+            <select id="exportTypeSelect">
+                <option value="color">Color Diffuse (PNG/JPG)</option>
+                <option value="blender_json">Blender материал (JSON + инструкция)</option>
+                <option value="pbr_zip">PBR набор (Color + Roughness + Normal)</option>
+            </select>
+        </div>
+        <button id="exportMainBtn" class="footer-btn">Экспортировать</button>
+        <button id="exportBlenderSettingsBtn" class="footer-btn blend">Экспорт для Blender</button>
+    </div>
+    <div id="exportStatusMsg" class="status-msg">Готов к работе | Бесшовные текстуры</div>
+</div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // --- Инициализация 2D сцены ---
+    const container2d = document.getElementById('canvas2d');
+    const scene2d = new THREE.Scene();
+    scene2d.background = new THREE.Color(0x0e1e28);
+    const camera2d = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+    camera2d.position.z = 1;
+    const renderer2d = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer2d.setSize(container2d.clientWidth, container2d.clientHeight);
+    container2d.appendChild(renderer2d.domElement);
+
+    // --- 3D сцена ---
+    const container3d = document.getElementById('canvas3d');
+    const scene3d = new THREE.Scene();
+    scene3d.background = new THREE.Color(0x0e1e28);
+    scene3d.fog = new THREE.FogExp2(0x0e1e28, 0.025);
+    const camera3d = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera3d.position.set(2.2, 1.6, 2.8);
+    const renderer3d = new THREE.WebGLRenderer({ antialias: true });
+    renderer3d.setSize(container3d.clientWidth, container3d.clientHeight);
+    container3d.appendChild(renderer3d.domElement);
+    const controls3d = new OrbitControls(camera3d, renderer3d.domElement);
+    controls3d.enableDamping = true;
+    controls3d.enableZoom = true;
+    controls3d.target.set(0, 0, 0);
+
+    // Освещение
+    const ambientLight = new THREE.AmbientLight(0x4a5c6e);
+    scene3d.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(1, 2.5, 1);
+    scene3d.add(dirLight);
+    const fillLight = new THREE.PointLight(0x5588aa, 0.5);
+    fillLight.position.set(1, 1, 1.5);
+    scene3d.add(fillLight);
+
+    let currentMesh3d = null;
+    let currentGeometryType = 'torus';
+    let customModel = null;
+
+    // --- Шейдер с различными шумами (Перлин и симплекс) ---
+    const uniforms = {
+        uTime: { value: 0 }, uScale: { value: 2.5 }, uSpeed: { value: 0.7 }, uIntensity: { value: 0.9 },
+        uPatternType: { value: 0 }, uColor1: { value: new THREE.Color() }, uColor2: { value: new THREE.Color() },
+        uSaturation: { value: 1.0 }, uBlendMode: { value: 0 }, uRotation: { value: 0.0 },
+        uOffset: { value: new THREE.Vector2(0, 0) }, uMirror: { value: 0 }, uOctaves: { value: 3 },
+        uPersistence: { value: 0.5 }, uLacunarity: { value: 2.0 }, uTileEnabled: { value: 1 }
+    };
+
+    const vertexShader = `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_PointSize = 1.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+    `;
+
+    const fragmentShader = `
+        uniform float uTime; uniform float uScale; uniform float uSpeed; uniform float uIntensity;
+        uniform int uPatternType; uniform vec3 uColor1; uniform vec3 uColor2; uniform float uSaturation;
+        uniform int uBlendMode; uniform float uRotation; uniform vec2 uOffset; uniform int uMirror;
+        uniform int uOctaves; uniform float uPersistence; uniform float uLacunarity; uniform int uTileEnabled;
+        varying vec2 vUv;
+
+        // базовый случайный
+        float random (vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+
+        // Value noise (для обратной совместимости)
+        float noiseVal(vec2 st) {
+            vec2 i = floor(st); vec2 f = fract(st);
+            float a = random(i); float b = random(i + vec2(1.,0.)); float c = random(i + vec2(0.,1.)); float d = random(i + vec2(1.,1.));
+            vec2 u = f*f*(3.0-2.0*f);
+            return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+        }
+
+        // --- Gradient Perlin noise (классический) ---
+        vec2 hash(vec2 p) {
+            p = fract(p * vec2(123.34, 456.21));
+            p += dot(p, p + 45.32);
+            return fract(vec2(p.x * p.y, p.y * p.x)) * 2.0 - 1.0;
+        }
+        float perlinNoise(vec2 st) {
+            vec2 i = floor(st);
+            vec2 f = fract(st);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            vec2 grad00 = hash(i);
+            vec2 grad10 = hash(i + vec2(1.0, 0.0));
+            vec2 grad01 = hash(i + vec2(0.0, 1.0));
+            vec2 grad11 = hash(i + vec2(1.0, 1.0));
+            float dot00 = dot(grad00, f);
+            float dot10 = dot(grad10, f - vec2(1.0, 0.0));
+            float dot01 = dot(grad01, f - vec2(0.0, 1.0));
+            float dot11 = dot(grad11, f - vec2(1.0, 1.0));
+            return mix(mix(dot00, dot10, u.x), mix(dot01, dot11, u.x), u.y) * 0.5 + 0.5;
+        }
+
+        // --- Simplex noise (стандартный) ---
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+        float simplexNoise(vec2 v) {
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+            vec2 i = floor(v + dot(v, C.yy) );
+            vec2 x0 = v - i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod289(i);
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+            m = m*m ; m = m*m;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x = a0.x * x0.x + h.x * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+        }
+
+        // FBM для разных шумов
+        float fbmPerlin(vec2 st, int oct, float pers, float lac) {
+            float val = 0.0, amp = 0.5, freq = 2.0;
+            for(int i=0; i<6; i++) { if(i>=oct) break; val += amp * (perlinNoise(st * freq)*2.0-1.0); amp *= pers; freq *= lac; }
+            return val * 0.5 + 0.5;
+        }
+        float fbmSimplex(vec2 st, int oct, float pers, float lac) {
+            float val = 0.0, amp = 0.5, freq = 2.0;
+            for(int i=0; i<6; i++) { if(i>=oct) break; val += amp * simplexNoise(st * freq); amp *= pers; freq *= lac; }
+            return val * 0.5 + 0.5;
+        }
+
+        float voronoi(vec2 uv) {
+            vec2 p = floor(uv); vec2 f = fract(uv); float res = 1.0;
+            for(int j=-1; j<=1; j++) for(int i=-1; i<=1; i++) {
+                vec2 b = vec2(float(i), float(j)); vec2 r = b - f + random(p + b);
+                res = min(res, dot(r,r));
+            } return sqrt(res);
+        }
+        float truchetPattern(vec2 uv, float t) { uv = fract(uv * 3.0) - 0.5; float angle = sin(t + uv.x*10.) * cos(t + uv.y*10.); return step(length(uv), 0.4+0.2*sin(angle*20.+t)); }
+        float cellularAutomaton(vec2 uv, float t) {
+            vec2 st = uv * 8.0; vec2 ip = floor(st); float sum = 0.0;
+            for(int i=-1; i<=1; i++) for(int j=-1; j<=1; j++) { vec2 off = vec2(float(i), float(j)); sum += random(ip + off + vec2(floor(t*0.5))); }
+            float center = random(ip + vec2(floor(t*0.5)));
+            return step(0.5, (sum > 4.0) ? 1.0 - center : center);
+        }
+        vec3 mandelbrotColor(vec2 uv, float timeVal) {
+            vec2 c = (uv - 0.5) * 3.5 - 0.5;
+            c.x += 0.2;
+            vec2 z = vec2(0.0);
+            int iter = 0, maxIter = 100;
+            for(int i=0; i<100; i++) { if(iter>maxIter-1) break; z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c; if(dot(z,z)>4.0) break; iter++; }
+            float ratio = float(iter) / float(maxIter);
+            if (ratio < 0.33) return vec3(ratio*3.0, 0.0, 0.2);
+            else if (ratio < 0.66) return vec3(1.0, (ratio-0.33)*3.0, 0.2);
+            else return vec3(1.0, 1.0, (ratio-0.66)*3.0);
+        }
+
+        void main() {
+            vec2 uv = vUv;
+            float angle = uRotation * 3.14159 / 180.0;
+            vec2 centered = uv - 0.5;
+            vec2 rotated = vec2(centered.x*cos(angle)-centered.y*sin(angle), centered.x*sin(angle)+centered.y*cos(angle));
+            uv = rotated + 0.5 + uOffset;
+            if(uMirror == 1) uv.x = 1.0 - uv.x; else if(uMirror == 2) uv.y = 1.0 - uv.y; else if(uMirror == 3) { uv.x = 1.0 - uv.x; uv.y = 1.0 - uv.y; }
+            if(uTileEnabled == 1) uv = fract(uv);
+            vec2 st = uv * uScale;
+            float timeShift = uTime * uSpeed;
+
+            vec3 color;
+            if(uPatternType == 6) {
+                color = mandelbrotColor(st + timeShift*0.05, uTime);
+            } else {
+                float patternValue;
+                if(uPatternType == 0) { // волны
+                    float w1 = sin(st.x*8.0+timeShift)*cos(st.y*8.0-timeShift);
+                    float w2 = sin((st.y*12.0-timeShift*1.5)+st.x*5.0);
+                    patternValue = (w1 + w2)*0.6+0.5;
+                } else if(uPatternType == 1) { // вороного
+                    patternValue = voronoi(st*3.5 + timeShift*0.2);
+                    patternValue = pow(patternValue*1.2, 0.8);
+                } else if(uPatternType == 2) { // Перлин
+                    patternValue = fbmPerlin(st, uOctaves, uPersistence, uLacunarity);
+                } else if(uPatternType == 3) { // Truchet
+                    patternValue = truchetPattern(st*3.0, timeShift);
+                    patternValue = patternValue*0.8+0.2;
+                } else if(uPatternType == 4) { // Симплекс
+                    patternValue = fbmSimplex(st, uOctaves, uPersistence, uLacunarity);
+                } else { // 5 - клеточный автомат
+                    patternValue = cellularAutomaton(st + timeShift*0.2, uTime);
+                }
+                patternValue = clamp(patternValue * uIntensity, 0.0, 1.0);
+                vec3 base = mix(uColor1, uColor2, patternValue);
+                float gray = dot(base, vec3(0.299, 0.587, 0.114));
+                color = mix(vec3(gray), base, uSaturation);
+                if(uBlendMode == 1) color = color * patternValue;
+            }
+            gl_FragColor = vec4(color, 1.0);
+        }
+    `;
+
+    function createMaterial() { return new THREE.ShaderMaterial({ uniforms: uniforms, vertexShader, fragmentShader, side: THREE.DoubleSide }); }
+
+    const plane2d = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), createMaterial());
+    scene2d.add(plane2d);
+
+    function createGeometry(type) {
+        if(type === 'torus') return new THREE.TorusKnotGeometry(0.85, 0.22, 200, 32, 3, 4);
+        if(type === 'sphere') return new THREE.SphereGeometry(0.9, 128, 128);
+        if(type === 'cube') return new THREE.BoxGeometry(1.2, 1.2, 1.2);
+        return new THREE.CylinderGeometry(0.8, 0.8, 1.2, 64);
+    }
+    function update3dModel() {
+        if(currentMesh3d) scene3d.remove(currentMesh3d);
+        if(customModel) {
+            customModel.traverse(child => { if(child.isMesh) child.material = createMaterial(); });
+            scene3d.add(customModel);
+            currentMesh3d = customModel;
+        } else {
+            const mesh = new THREE.Mesh(createGeometry(currentGeometryType), createMaterial());
+            scene3d.add(mesh);
+            currentMesh3d = mesh;
+        }
+        const box = new THREE.Box3().setFromObject(currentMesh3d);
+        controls3d.target.copy(box.getCenter(new THREE.Vector3()));
+    }
+    update3dModel();
+
+    // --- UI привязки ---
+    const elements = {
+        scale: document.getElementById('scale'), speed: document.getElementById('speed'), octaves: document.getElementById('octaves'),
+        persistence: document.getElementById('persistence'), lacunarity: document.getElementById('lacunarity'),
+        hue1: document.getElementById('hue1'), sat1: document.getElementById('sat1'), light1: document.getElementById('light1'),
+        hue2: document.getElementById('hue2'), sat2: document.getElementById('sat2'), light2: document.getElementById('light2'),
+        saturation: document.getElementById('saturation'), blendMode: document.getElementById('blendMode'),
+        rotate: document.getElementById('rotate'), offsetX: document.getElementById('offsetX'), offsetY: document.getElementById('offsetY'),
+        mirror: document.getElementById('mirror'), tileToggle: document.getElementById('tileToggle')
+    };
+    function hslToColor(h,s,l){ let c=(1-Math.abs(2*l-1))*s, hp=h/60, x=c*(1-Math.abs((hp%2)-1)), r1,g1,b1; if(hp<1){r1=c;g1=x;b1=0;} else if(hp<2){r1=x;g1=c;b1=0;} else if(hp<3){r1=0;g1=c;b1=x;} else if(hp<4){r1=0;g1=x;b1=c;} else if(hp<5){r1=x;g1=0;b1=c;} else{r1=c;g1=0;b1=x;} let m=l-c/2; return new THREE.Color(r1+m,g1+m,b1+m); }
+    function updateUniforms() {
+        uniforms.uScale.value = parseFloat(elements.scale.value); uniforms.uSpeed.value = parseFloat(elements.speed.value);
+        uniforms.uIntensity.value = parseFloat(elements.octaves.value)/3.0; uniforms.uOctaves.value = parseInt(elements.octaves.value);
+        uniforms.uPersistence.value = parseFloat(elements.persistence.value); uniforms.uLacunarity.value = parseFloat(elements.lacunarity.value);
+        uniforms.uSaturation.value = parseFloat(elements.saturation.value); uniforms.uBlendMode.value = parseInt(elements.blendMode.value);
+        uniforms.uRotation.value = parseFloat(elements.rotate.value); uniforms.uOffset.value.set(parseFloat(elements.offsetX.value), parseFloat(elements.offsetY.value));
+        uniforms.uMirror.value = parseInt(elements.mirror.value); uniforms.uTileEnabled.value = parseInt(elements.tileToggle.value);
+        let c1 = hslToColor(parseFloat(elements.hue1.value), parseFloat(elements.sat1.value), parseFloat(elements.light1.value));
+        let c2 = hslToColor(parseFloat(elements.hue2.value), parseFloat(elements.sat2.value), parseFloat(elements.light2.value));
+        uniforms.uColor1.value = c1; uniforms.uColor2.value = c2;
+        document.getElementById('colorPreview1').style.backgroundColor = `hsl(${elements.hue1.value}, ${elements.sat1.value*100}%, ${elements.light1.value*100}%)`;
+        document.getElementById('colorPreview2').style.backgroundColor = `hsl(${elements.hue2.value}, ${elements.sat2.value*100}%, ${elements.light2.value*100}%)`;
+        for(let id of ['scaleVal','speedVal','octavesVal','persistenceVal','lacunarityVal','saturationVal','rotateVal','offsetXVal','offsetYVal','hue1Val','sat1Val','light1Val','hue2Val','sat2Val','light2Val']) {
+            let el = document.getElementById(id); if(el) el.innerText = document.getElementById(id.replace('Val',''))?.value || '';
+        }
+        document.getElementById('rotateVal').innerText = elements.rotate.value + '°';
+        document.getElementById('offsetXVal').innerText = elements.offsetX.value; document.getElementById('offsetYVal').innerText = elements.offsetY.value;
+    }
+    Object.values(elements).forEach(el => el?.addEventListener('input', updateUniforms));
+    updateUniforms();
+
+    // Паттерны (7)
+    const patterns = [{name:'Волны',v:0},{name:'Вороного',v:1},{name:'Перлин',v:2},{name:'Truchet',v:3},{name:'Симплекс',v:4},{name:'Клеточный',v:5},{name:'Мандельброт',v:6}];
+    const patternDiv = document.getElementById('patternButtons');
+    patterns.forEach(p=>{ let btn=document.createElement('button'); btn.className='pattern-btn'; btn.textContent=p.name; btn.dataset.pattern=p.v; btn.onclick=()=>{ uniforms.uPatternType.value=p.v; document.querySelectorAll('#patternButtons .pattern-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }; patternDiv.appendChild(btn); if(p.v===0) btn.classList.add('active'); });
+
+    document.querySelectorAll('[data-geo]').forEach(btn=>btn.addEventListener('click',()=>{ customModel=null; currentGeometryType=btn.getAttribute('data-geo'); update3dModel(); }));
+    const modelInput=document.getElementById('modelFileInput'), modelStatus=document.getElementById('modelStatus'), loader=new GLTFLoader();
+    modelInput.addEventListener('change',e=>{ if(!e.target.files[0]) return; let url=URL.createObjectURL(e.target.files[0]); loader.load(url,gltf=>{ if(currentMesh3d) scene3d.remove(currentMesh3d); customModel=gltf.scene; let box=new THREE.Box3().setFromObject(customModel), size=box.getSize(new THREE.Vector3()).length(), scl=1.2/size; customModel.scale.set(scl,scl,scl); customModel.position.sub(box.getCenter(new THREE.Vector3()).multiplyScalar(scl)); update3dModel(); URL.revokeObjectURL(url); modelStatus.textContent='Модель загружена'; setTimeout(()=>modelStatus.textContent='',2000); }, undefined,()=>{ modelStatus.textContent='Ошибка загрузки'; }); });
+
+    // Пресеты
+    function getCurrentPreset(){ let p={}; for(let k in elements) if(elements[k]) p[k]=elements[k].value; p.patternType=uniforms.uPatternType.value; return p; }
+    function applyPreset(p){ for(let k in p) if(elements[k]) elements[k].value=p[k]; if(p.patternType!==undefined) uniforms.uPatternType.value=p.patternType; updateUniforms(); document.querySelectorAll('#patternButtons .pattern-btn').forEach(btn=>{ if(parseInt(btn.dataset.pattern)===uniforms.uPatternType.value) btn.click(); }); }
+    document.getElementById('savePresetBtn').onclick=()=>{ let presets=JSON.parse(localStorage.getItem('patternforge_presets')||'[]'); presets.push(getCurrentPreset()); localStorage.setItem('patternforge_presets',JSON.stringify(presets)); alert('Пресет сохранён'); };
+    document.getElementById('loadPresetBtn').onclick=()=>{ let inp=document.createElement('input'); inp.type='file'; inp.accept='.json'; inp.onchange=e=>{ if(e.target.files[0]){ let fr=new FileReader(); fr.onload=ev=>{ try{ applyPreset(JSON.parse(ev.target.result)); }catch(e){ alert('Ошибка JSON'); } }; fr.readAsText(e.target.files[0]); } }; inp.click(); };
+
+    // --- Экспорт с PBR и Blender JSON ---
+    async function renderTextureAtSize(size, tileFlag=null) {
+        const originalTile = uniforms.uTileEnabled.value;
+        if(tileFlag !== null) uniforms.uTileEnabled.value = tileFlag;
+        const scene = new THREE.Scene();
+        const cam = new THREE.OrthographicCamera(-1,1,1,-1,0.1,10);
+        cam.position.z=1;
+        const mat = new THREE.ShaderMaterial({ uniforms: { ...uniforms, uTime:{value: uniforms.uTime.value} }, vertexShader, fragmentShader });
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2,2), mat);
+        scene.add(mesh);
+        const renderer = new THREE.WebGLRenderer({ preserveDrawingBuffer: true });
+        renderer.setSize(size, size);
+        renderer.render(scene, cam);
+        const canvas = renderer.domElement;
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        renderer.dispose(); mat.dispose();
+        if(tileFlag !== null) uniforms.uTileEnabled.value = originalTile;
+        return { blob, canvas };
+    }
+
+    async function generateRoughnessFromColor(size, colorCanvas) { 
+        const offCanvas = document.createElement('canvas'); offCanvas.width = size; offCanvas.height = size;
+        const ctx = offCanvas.getContext('2d'); ctx.drawImage(colorCanvas, 0, 0); const imgData = ctx.getImageData(0,0,size,size); const data = imgData.data;
+        for(let i=0;i<data.length;i+=4){ let brightness = (data[i]+data[i+1]+data[i+2])/765; let rough = 1.0 - brightness*0.8; let val = Math.floor(rough*255); data[i]=val; data[i+1]=val; data[i+2]=val; }
+        ctx.putImageData(imgData,0,0); return new Promise(resolve=> offCanvas.toBlob(resolve, 'image/png'));
+    }
+
+    document.getElementById('exportMainBtn').onclick = async () => {
+        const type = document.getElementById('exportTypeSelect').value;
+        const resolution = parseInt(document.getElementById('exportResolution').value);
+        const format = document.getElementById('exportFormat').value;
+        const statusDiv = document.getElementById('exportStatusMsg');
+        statusDiv.textContent = 'Генерация...';
+        if(type === 'color') {
+            const { blob } = await renderTextureAtSize(resolution, 1);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `texture_${resolution}.${format}`; a.click(); URL.revokeObjectURL(url);
+            statusDiv.textContent = 'Текстура сохранена';
+        } else if (type === 'blender_json') {
+            const preset = getCurrentPreset();
+            preset.patternType = uniforms.uPatternType.value;
+            preset.seamless = (uniforms.uTileEnabled.value === 1);
+            const instructions = `// Импорт в Blender: создайте материал, используйте шейдерные ноды. Параметры: ${JSON.stringify(preset, null, 2)}. Для бесшовной текстуры экспортируйте PNG и примените в Image Texture -> Mapping -> Repeat.`;
+            const jsonBlob = new Blob([JSON.stringify({ preset, instruction: instructions }, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(jsonBlob); const a = document.createElement('a'); a.href = url; a.download = 'blender_material_preset.json'; a.click(); URL.revokeObjectURL(url);
+            statusDiv.textContent = 'JSON экспортирован';
+        } else if (type === 'pbr_zip') {
+            const { blob: colorBlob, canvas: colorCanvas } = await renderTextureAtSize(resolution, 1);
+            const roughnessBlob = await generateRoughnessFromColor(resolution, colorCanvas);
+            const zip = new JSZip();
+            zip.file(`diffuse_${resolution}.png`, colorBlob);
+            zip.file(`roughness_${resolution}.png`, roughnessBlob);
+            const offNorm = document.createElement('canvas'); offNorm.width = resolution; offNorm.height = resolution;
+            const ctxN = offNorm.getContext('2d'); ctxN.fillStyle = '#8080ff'; ctxN.fillRect(0,0,resolution,resolution);
+            const normBlob = await new Promise(resolve=> offNorm.toBlob(resolve, 'image/png'));
+            zip.file(`normal_${resolution}.png`, normBlob);
+            const content = await zip.generateAsync({type:"blob"});
+            const url = URL.createObjectURL(content); const a = document.createElement('a'); a.href = url; a.download = `pbr_pack_${resolution}.zip`; a.click(); URL.revokeObjectURL(url);
+            statusDiv.textContent = 'PBR-пакет (Diffuse + Roughness + Normal) готов';
+        }
+        setTimeout(()=>statusDiv.textContent='Готово', 2000);
+    };
+    document.getElementById('exportBlenderSettingsBtn').onclick = async () => {
+        const resolution = parseInt(document.getElementById('exportResolution').value);
+        const { blob } = await renderTextureAtSize(resolution, 1);
+        const urlTex = URL.createObjectURL(blob);
+        const preset = getCurrentPreset();
+        const blenderReadme = `Интеграция с Blender:\n1. Сохраните текстуру: ${urlTex}\n2. В Blender создайте материал, добавьте Image Texture (файл).\n3. Для бесшовности включите Repeat в Mapping.\n4. Параметры генерации: ${JSON.stringify(preset)}.\nРекомендуется использовать Shader Nodes с ColorRamp.`;
+        const txtBlob = new Blob([blenderReadme], {type:'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(txtBlob); a.download = 'blender_integration.txt'; a.click();
+        URL.revokeObjectURL(urlTex);
+        document.getElementById('exportStatusMsg').textContent = 'Инструкция для Blender сохранена';
+    };
+
+    // Анимация
+    function animate() {
+        requestAnimationFrame(animate);
+        uniforms.uTime.value = performance.now() / 1000;
+        if(plane2d.material) plane2d.material.uniforms = uniforms;
+        if(currentMesh3d) {
+            if(currentMesh3d.isGroup || currentMesh3d.isScene) currentMesh3d.traverse(c=>{ if(c.isMesh && c.material) c.material.uniforms = uniforms; });
+            else if(currentMesh3d.material) currentMesh3d.material.uniforms = uniforms;
+        }
+        renderer2d.render(scene2d, camera2d);
+        controls3d.update(); renderer3d.render(scene3d, camera3d);
+    }
+    animate();
+    window.addEventListener('resize',()=>{ renderer2d.setSize(container2d.clientWidth, container2d.clientHeight); renderer3d.setSize(container3d.clientWidth, container3d.clientHeight); camera3d.aspect = container3d.clientWidth/container3d.clientHeight; camera3d.updateProjectionMatrix(); });
+    setTimeout(()=>window.dispatchEvent(new Event('resize')), 100);
+</script>
 </body>
 </html>
