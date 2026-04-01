@@ -1,0 +1,70 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #052842;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.top-bar {
+  background: #001b64cc;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #d0d8e0;
+  padding: 8px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  z-index: 20;
+  justify-content: space-between;
+}
+.pattern-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.pattern-btn {
+  background: #f0f4f8;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  color: #2c3e4e;
+}
+.pattern-btn.active {
+  background: #4a7a9a;
+  color: white;
+  border-color: #4a7a9a;
+}
+.action-btn {
+  background: #f0f4f8;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.action-btn:hover { background: #e2e8f0; }
+.main-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+#canvas-container {
+  flex: 1;
+  position: relative;
+  background: #eef2f5;
+}
+.settings-panel {
+  width: 340px;
+  background: #ffffffcc;
+  backdrop-filter: blur(8px);
+  border-left: 1px solid #d0d8e0;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  color: #2c3e4e;
+}
+/* остальные стили аналогичны исходным */
