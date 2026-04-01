@@ -1,1 +1,1 @@
-https://patternforge.hostfl.ru/
+Ссылка на разработанный инструмент: https://patternforge.hostfl.ru/
