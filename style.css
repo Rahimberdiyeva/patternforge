@@ -129,7 +129,7 @@ body {
   min-height: 0;
 }
 
-/* Блок генерации — полная высота и внутренний скролл */
+/* Блок генерации — гарантированная прокрутка */
 .settings-column {
   flex: 0 0 420px;
   background: #fffafc;
@@ -155,7 +155,6 @@ body {
   z-index: 10;
 }
 
-/* ГЛАВНОЕ: панель с параметрами скроллится, если контент превышает высоту */
 .settings-panel {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -320,7 +319,7 @@ canvas {
 }
 
 .accordion-group.open .accordion-content {
-  max-height: 1200px; /* достаточно большое значение для всего контента */
+  max-height: 1200px;
   padding: 0 18px 18px 18px;
 }
 
