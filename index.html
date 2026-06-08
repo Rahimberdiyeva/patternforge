@@ -25,10 +25,11 @@
 
   <main class="main-layout">
     <aside class="settings-column">
-      <div class="generation-header">Генерация</div>
+      <div class="generation-header">Параметры</div>
       <div class="settings-panel">
+        <!-- Генерация -->
         <div class="accordion-group">
-          <div class="accordion-header">Параметры</div>
+          <div class="accordion-header">Генерация</div>
           <div class="accordion-content">
             <div class="control-row"><label>Масштаб</label><input type="range" id="scale" min="0.1" max="2" step="0.01" value="0.8"><span class="value-display" id="scaleVal">0.80</span></div>
             <div class="control-row"><label>Октавы</label><input type="range" id="octaves" min="1" max="8" step="1" value="3"><span class="value-display" id="octavesVal">3</span></div>
@@ -37,10 +38,14 @@
             <div class="control-row"><label>Насыщенность</label><input type="range" id="saturation" min="0" max="3" step="0.01" value="1.5"><span class="value-display" id="saturationVal">1.50</span></div>
             <div class="control-row"><label>Смешивание</label><select id="blendMode" class="compact-select"><option value="0">Линейное</option><option value="1">Мультипликативное</option></select></div>
             <div class="control-row"><label>Интенсивность</label><input type="range" id="intensity" min="0" max="2" step="0.01" value="1.0"><span class="value-display" id="intensityVal">1.00</span></div>
-            <div class="control-row"><label>Масштаб 3D</label><input type="range" id="tile3dScale" min="0.2" max="5" step="0.02" value="1.0"><span class="value-display" id="tile3dScaleVal">1.00</span></div>
+            <div class="control-row"><label>Сила Normal</label><input type="range" id="normalStrength" min="0.2" max="3" step="0.01" value="1.0"><span class="value-display" id="normalStrengthVal">1.00</span></div>
+            <div class="control-row"><label>Контраст Roughness</label><input type="range" id="roughnessContrast" min="0.5" max="3" step="0.01" value="1.5"><span class="value-display" id="roughnessContrastVal">1.50</span></div>
+            <div class="control-row"><label>Порог Metallic</label><input type="range" id="metalThreshold" min="0" max="1" step="0.01" value="0.4"><span class="value-display" id="metalThresholdVal">0.40</span></div>
+            <div class="control-row"><label>Контраст Metallic</label><input type="range" id="metalScale" min="0.5" max="4" step="0.01" value="2.0"><span class="value-display" id="metalScaleVal">2.00</span></div>
           </div>
         </div>
 
+        <!-- Рельеф (2D) -->
         <div class="accordion-group">
           <div class="accordion-header">Рельеф (2D)</div>
           <div class="accordion-content">
@@ -49,6 +54,7 @@
           </div>
         </div>
 
+        <!-- Трансформы -->
         <div class="accordion-group">
           <div class="accordion-header">Трансформы</div>
           <div class="accordion-content">
@@ -59,6 +65,7 @@
           </div>
         </div>
 
+        <!-- Цветовая палитра -->
         <div class="accordion-group">
           <div class="accordion-header">Цветовая палитра</div>
           <div class="accordion-content">
@@ -67,6 +74,7 @@
           </div>
         </div>
 
+        <!-- Domain Warping -->
         <div class="accordion-group">
           <div class="accordion-header">Domain Warping</div>
           <div class="accordion-content">
@@ -76,6 +84,7 @@
           </div>
         </div>
 
+        <!-- 3D модель -->
         <div class="accordion-group">
           <div class="accordion-header">3D модель</div>
           <div class="accordion-content">
@@ -88,6 +97,15 @@
           </div>
         </div>
 
+        <!-- Освещение -->
+        <div class="accordion-group">
+          <div class="accordion-header">Освещение</div>
+          <div class="accordion-content">
+            <div class="control-row"><label>Интенсивность света</label><input type="range" id="lightIntensity" min="0.1" max="10" step="0.01" value="2.0"><span class="value-display" id="lightIntensityVal">2.00</span></div>
+          </div>
+        </div>
+
+        <!-- Фоновое изображение -->
         <div class="accordion-group">
           <div class="accordion-header">Фоновое изображение</div>
           <div class="accordion-content">
@@ -101,6 +119,7 @@
           </div>
         </div>
 
+        <!-- Паттерны (Слои) -->
         <div class="accordion-group">
           <div class="accordion-header">Паттерны (Слои)</div>
           <div class="accordion-content">
@@ -114,6 +133,7 @@
           </div>
         </div>
 
+        <!-- Пресет -->
         <div class="accordion-group">
           <div class="accordion-header">Пресет</div>
           <div class="accordion-content">
@@ -156,7 +176,7 @@
       <span class="footer-label">Экспорт 2D</span>
       <div class="footer-controls">
         <select id="export2DFormat" class="compact-select"><option value="png">PNG</option><option value="jpg">JPG</option><option value="svg">SVG</option><option value="pbr">PBR (ZIP)</option></select>
-        <select id="exportResolution" class="compact-select"><option value="1024">1K</option><option value="2048">2K</option><option value="4096">4K</option><option value="8192">8K</option></select>
+        <select id="exportResolution" class="compact-select"><option value="1024">1K</option><option value="2048">2K</option><option value="4096">4K</option></select>
       </div>
       <button id="export2DBtn" class="export-btn">Скачать</button>
     </div>
@@ -173,7 +193,6 @@
         <select id="integrationSelect" class="compact-select">
           <option value="blender">Blender</option>
           <option value="unity">Unity</option>
-          <option value="godot">Godot</option>
         </select>
       </div>
       <button id="integrationDownloadBtn" class="export-btn">Скачать</button>
